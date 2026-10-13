@@ -322,3 +322,7 @@ nav button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--ink)}
 .kb .kb-space{flex:4 1 0;font-size:13px;text-transform:none;color:var(--mute)}
 .kb .kb-enter{flex:2 1 0;background:var(--ink);color:var(--bg);border-color:var(--ink);font-size:16px;font-weight:600;text-transform:none}
 #answer[readonly]{caret-color:transparent;cursor:default}
+
+.syncrow{margin-top:12px;gap:12px}
+#syncNow{min-height:40px;padding:0 18px}
+#syncNow:disabled{opacity:.6}

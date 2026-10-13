@@ -50,7 +50,10 @@
     <div class="acct" id="acct" hidden>
       <p class="lbl">Account</p>
       <div id="acctIn"><form class="acctrow" id="acctForm"><label for="email">Sync across devices</label><input id="email" type="email" required placeholder="you@example.com" autocomplete="email"><button class="link">Email me a link</button></form></div>
-      <p class="acctrow" id="acctOut" hidden>Signed in as <b id="acctWho"></b> · <button type="button" class="link" id="signout">Sign out</button> · <button type="button" class="link danger" id="delacct">Delete account</button></p>
+      <div id="acctOut" hidden>
+        <p class="acctrow">Signed in as <b id="acctWho"></b> · <button type="button" class="link" id="signout">Sign out</button> · <button type="button" class="link danger" id="delacct">Delete account</button></p>
+        <p class="acctrow syncrow"><button type="button" id="syncNow">Sync now</button><span id="syncStat" role="status">Combines this device with your account. Nothing is lost.</span></p>
+      </div>
     </div>
   </section>
 

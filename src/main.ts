@@ -1,7 +1,7 @@
 import './styles.css';
 import type {SupabaseClient,User} from '@supabase/supabase-js';
 import type {Cfg,Flag,Option,PassCol,PassFields,RawFlag,SaveState} from './types';
-import {candidates,norm,KNOWN,MC_DONE,REGS,POOLS,MODES,TIMES,destinationOptions,destRegs,prio,applyAnswer,flightCode,parseFlight,isKnown,needsWork} from './logic';
+import {mergeSaves,candidates,norm,KNOWN,MC_DONE,REGS,POOLS,MODES,TIMES,destinationOptions,destRegs,prio,applyAnswer,flightCode,parseFlight,isKnown,needsWork} from './logic';
 const {default:RAW}=await import('./flags.json');
 const EXTRA:Record<string,string[]>={'United States':['us','america'],'United Kingdom':['uk','britain','greatbritain'],'Netherlands':['holland'],'Myanmar':['burma'],'Eswatini':['swaziland'],'North Macedonia':['macedonia'],'Czechia':['czechrepublic'],'Turkey':['turkiye'],'Timor-Leste':['easttimor'],'Cape Verde':['caboverde'],'Vatican City':['vatican','holysee'],'Republic of the Congo':['congobrazzaville'],'South Korea':['korea'],'Russia':['russianfederation']};
 const FLAGS:Flag[]=(RAW as RawFlag[]).map(f=>{
@@ -413,25 +413,32 @@ const SB_URL='https://poemkxmxbmstigpcwyas.supabase.co',SB_KEY='sb_publishable_6
 let sb:SupabaseClient|null=null;
 let uid:string|null=null;
 // Decide what to keep when this browser and the account both have progress.
-function mergeStates(local:SaveState,remote:SaveState){
-  // TODO(Wil): newest-wins drops the older side entirely. See the chat for the tradeoffs.
-  return (remote.t||0)>=(local.t||0)?remote:local;
-}
 async function connect(user:User|null){
   if(!sb)return;
   if((user&&user.id)===uid)return; // token refreshes re-fire auth events; only act when the player changes
   uid=user?user.id:null;cloud=null;
   $('acctIn').hidden=!!user;$('acctOut').hidden=!user;$('acctWho').textContent=user?user.email||'':'';
   if(!user){sync(false);return}
-  const {data,error}=await sb.from('flag_sprint_state').select('state').eq('user_id',uid).returns<{state:SaveState}[]>().maybeSingle();
-  if(error){sync(false,'Account load failed, kept in this browser');return}
   const client=sb;cloud={set:st=>client.from('flag_sprint_state').upsert({user_id:uid,state:st,updated_at:new Date().toISOString()}).then(r=>{if(r.error)throw r.error})};
-  const remote=data&&data.state;
-  if(remote)S=JSON.parse(JSON.stringify(mergeStates(S,remote)));
+  if(!await pullMerge())sync(false,'Account load failed, kept in this browser');
+}
+// pull the account's save, merge it with this device's, and write the result to both
+async function pullMerge():Promise<boolean>{
+  if(!sb||!uid)return false;
+  const {data,error}=await sb.from('flag_sprint_state').select('state').eq('user_id',uid).returns<{state:SaveState}[]>().maybeSingle();
+  if(error)return false;
+  S={hist,marks:[...marks],best:S.best,cfg,conf,kat,t:S.t||0}; // fold in-memory changes in WITHOUT a new timestamp, so "newer" still means last real change
+  if(data&&data.state)S=JSON.parse(JSON.stringify(mergeSaves(S,data.state)));
   cfg=Object.assign({},DEF,S.cfg);cfg.regs=destRegs(cfg.dest);hist=S.hist||{};marks=new Set(S.marks||[]);S.best=S.best||{};conf=S.conf||{};kat=S.kat||{};
   if(!G){renderSetup();renderLib()}
-  persist(); // writes the merged state to this browser and the account
+  store.set('state',S);clearTimeout(saveTimer);
+  try{await cloud?.set(S);return true}catch{return false}
 }
+$('syncNow').onclick=async()=>{
+  const b=$<HTMLButtonElement>('syncNow');b.disabled=true;$('syncStat').textContent='Syncing…';
+  const ok=await pullMerge();b.disabled=false;
+  $('syncStat').textContent=ok?`Synced at ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`:'Sync failed. Check your connection and try again.';
+};
 function wireAccount(){
   if(!sb)return;const client=sb;
   $('acct').hidden=false;

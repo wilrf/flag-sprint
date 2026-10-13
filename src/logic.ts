@@ -1,4 +1,4 @@
-import type {Cfg,Dest,Duration,FlightRoute,HistEntry,Mode,Option,Pool,Region} from './types';
+import type {Cfg,Dest,Duration,FlightRoute,HistEntry,Mode,Option,Pool,Region,SaveState} from './types';
 
 export const norm=(s:string)=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/&/g,' and ').replace(/\bsaint\b/g,'st').replace(/[^a-z0-9 ]/g,' ').replace(/\b(the|of|and)\b/g,' ').replace(/\s+/g,'');
 export const DURS:readonly Duration[]=[30,60,120,180,0]; // 0 = unlimited
@@ -53,4 +53,20 @@ export function parseFlight(q:string,charterUnlocked=false):FlightRoute|null{
   const p=POOLS[+m[1]-1],d=destinationOptions(charterUnlocked)[+m[2]],a=MODES[+m[3]-1],t=TIMES[+m[4]-1];
   if(!p||!d||!a||!t||d[0]==='Antarctica')return null;
   return {code:`FS ${m[1]}${m[2]}${m[3]}${m[4]}`,pool:p[0],dest:d[0],mode:a[0],dur:t[0],text:[p,d,a,t].map(x=>x[1]).join(' · ')};
+}
+
+// Combine two saves of the same player (e.g. Safari and the home-screen app) without losing either side.
+// Idempotent: merging a save with itself, or syncing twice, changes nothing, so counts take the max, never the sum.
+export function mergeSaves(a:SaveState,b:SaveState):SaveState{
+  const [older,newer]=(a.t||0)<=(b.t||0)?[a,b]:[b,a];
+  const keys=<T>(x:Record<string,T>|undefined,y:Record<string,T>|undefined)=>[...new Set([...Object.keys(x||{}),...Object.keys(y||{})])];
+  const hist:Record<string,HistEntry>={};
+  for(const k of keys(older.hist,newer.hist)){const o=older.hist?.[k],n=newer.hist?.[k];hist[k]=!o?n!:!n?o:o[0]>n[0]?o:n} // the side that played the flag more
+  const best:Record<string,number>={};
+  for(const k of keys(older.best,newer.best))best[k]=Math.max(older.best?.[k]??0,newer.best?.[k]??0);
+  const conf:Record<string,Record<string,number>>={};
+  for(const k of keys(older.conf,newer.conf)){const o=older.conf?.[k],n=newer.conf?.[k],c:Record<string,number>={};for(const j of keys(o,n))c[j]=Math.max(o?.[j]??0,n?.[j]??0);conf[k]=c}
+  const kat:Record<string,number>={};
+  for(const k of keys(older.kat,newer.kat)){const o=older.kat?.[k],n=newer.kat?.[k];kat[k]=o&&n?Math.min(o,n):(o||n)!} // first time it was known, on either device
+  return {hist,marks:[...new Set([...(older.marks||[]),...(newer.marks||[])])].sort(),best,cfg:{...older.cfg,...newer.cfg},conf,kat,t:Math.max(older.t||0,newer.t||0)};
 }

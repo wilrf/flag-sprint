@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
-import type {Cfg,HistEntry,PassFields} from './types';
-import {candidates,norm,flightCode,parseFlight,prio,applyAnswer,isKnown,needsWork,KNOWN,MC_CAP,POOLS,DESTS,MODES,DURS,destRegs} from './logic';
+import type {Cfg,HistEntry,PassFields,SaveState} from './types';
+import {mergeSaves,candidates,norm,flightCode,parseFlight,prio,applyAnswer,isKnown,needsWork,KNOWN,MC_CAP,POOLS,DESTS,MODES,DURS,destRegs} from './logic';
 
 const cfg:Cfg={pace:'learn',hap:true,kbd:'app',mode:'adaptive',dur:120,pool:'un',dest:'world',regs:destRegs('world')};
 const combinations:PassFields[]=[];
@@ -94,4 +94,15 @@ describe('candidates',()=>{
   it('keeps the only flag of a one-flag pool',()=>{expect(candidates(['a'],['a'])).toEqual(['a'])});
   it('rests the most recent flags',()=>{expect(candidates(['a','b','c'],['a','b'])).toEqual(['c'])});
   it('never returns an empty list',()=>{expect(candidates(['a','b'],['b','a'],5)).toEqual(['b'])});
+});
+
+describe('mergeSaves',()=>{
+  const phone:SaveState={hist:{France:[10,1,1500,0,3],Chad:[2,2,4000,1,0]},marks:['Chad'],best:{'type.un.120':12},cfg:{pace:'learn'},conf:{Chad:{Romania:2}},kat:{France:2000},t:100};
+  const laptop:SaveState={hist:{France:[4,0,1200,0,2],Peru:[3,0,1800,0,1]},marks:['Peru'],best:{'type.un.120':15,'mc.un.60':9},cfg:{pace:'sprint'},conf:{Chad:{Romania:1,Mali:1}},kat:{France:1000,Peru:3000},t:200};
+  const m=mergeSaves(phone,laptop);
+  it('keeps every flag from both sides, preferring the more-played entry',()=>{expect(m.hist).toEqual({France:[10,1,1500,0,3],Chad:[2,2,4000,1,0],Peru:[3,0,1800,0,1]})});
+  it('unions marks and keeps the higher best scores',()=>{expect(m.marks).toEqual(['Chad','Peru']);expect(m.best).toEqual({'type.un.120':15,'mc.un.60':9})});
+  it('takes mix-up counts as a max and the earliest known date',()=>{expect(m.conf).toEqual({Chad:{Romania:2,Mali:1}});expect(m.kat).toEqual({France:1000,Peru:3000})});
+  it('takes settings and time from the newer save',()=>{expect(m.cfg.pace).toBe('sprint');expect(m.t).toBe(200)});
+  it('is idempotent and order-independent',()=>{expect(mergeSaves(m,m)).toEqual(m);expect(mergeSaves(m,phone)).toEqual(m);expect(mergeSaves(laptop,phone)).toEqual(m)});
 });
