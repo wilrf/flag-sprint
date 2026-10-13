@@ -113,6 +113,9 @@ nav button[aria-current="page"]{border-color:var(--line);background:var(--panel)
 .lib{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
 .lib .item{padding:6px;border:1px solid var(--line);border-radius:4px;background:var(--bg)}
 .lib .item span{flex:1}
+.lib h3{grid-column:1/-1;margin:14px 0 2px;font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--mute)}
+.lib h3:first-child{margin-top:0}
+.lib .meta{display:block;color:var(--mute);font-family:var(--sans);font-size:12px;letter-spacing:0}
 .bad{color:var(--bad)}
 #q{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);width:min(100%,260px)}
 #q:focus{outline:none;border-color:var(--accent)}
@@ -246,6 +249,8 @@ body.playing .wrap{padding-block:8px;gap:0}
     <input id="q" placeholder="Search countries" aria-label="Search countries" autocomplete="off">
     <div class="chips" id="libf"></div>
   </div>
+  <div class="chips" id="libreg"></div>
+  <div class="row"><span class="hint">Sort</span><div class="chips" id="libsort"></div></div>
   <p class="hint" id="libnote"></p>
   <div class="list lib" id="libgrid"></div>
 </section>
@@ -257,7 +262,7 @@ body.playing .wrap{padding-block:8px;gap:0}
 const FLAGS=JSON.parse(document.getElementById('data').textContent);
 const EXTRA={'United States':['us','america'],'United Kingdom':['uk','britain','greatbritain'],'Netherlands':['holland'],'Myanmar':['burma'],'Eswatini':['swaziland'],'North Macedonia':['macedonia'],'Czechia':['czechrepublic'],'Turkey':['turkiye'],'Timor-Leste':['easttimor'],'Cape Verde':['caboverde'],'Vatican City':['vatican','holysee'],'Republic of the Congo':['congobrazzaville'],'South Korea':['korea'],'Russia':['russianfederation']};
 const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/&/g,' and ').replace(/\bsaint\b/g,'st').replace(/[^a-z0-9 ]/g,' ').replace(/\b(the|of|and)\b/g,' ').replace(/\s+/g,'');
-FLAGS.forEach(f=>{f.a=new Set([...f.a,...(EXTRA[f.n]||[])]);f.reg=f.r==='Americas'?(f.s==='South America'?'South America':'North America'):f.r;});
+FLAGS.forEach(f=>{f.a=new Set([...f.a,...(EXTRA[f.n]||[])]);f.reg=f.r==='Americas'?(f.s==='South America'?'South America':'North America'):f.r;f.meta=[f.s,f.reg,f.k==='un'?'UN member':'Non-UN'].filter((v,i,a)=>v&&a.indexOf(v)===i);f.tags=[f.r,...f.meta].map(norm);});
 
 const DURS=[30,60,120,180,0]; // 0 = unlimited
 const POOLS=[['un','UN members (194)'],['all','Everything (250)'],['weak','My weak flags'],['marked','Marked flags']];
@@ -499,17 +504,24 @@ function fx(ok){
   if(ok){const p=document.createElement('span');p.className='pop';p.textContent='+1';p.style.right='-22px';p.style.top='0';$('scorebox').append(p);setTimeout(()=>p.remove(),550)}
 }
 function show(id){document.body.classList.toggle('playing',id==='game');setTimeout(fit,0);['setup','game','result','library'].forEach(s=>$(s).hidden=s!==id);$('tabPlay').setAttribute('aria-current',id==='library'?'false':'page');$('tabLib').setAttribute('aria-current',id==='library'?'page':'false')}
-let libFilter='all';
+let libFilter='all',libReg='all',libSort='region';
+const REG_ORDER=[...REGS,'Antarctic'];
 function renderLib(){
   chips($('libf'),'radio','libf',[['all','All'],['marked','Marked'],['missed','Needs work']],v=>v===libFilter,e=>{libFilter=e.target.value;renderLib()});
+  chips($('libreg'),'radio','libreg',[['all','All regions'],...REGS.map(r=>[r,r])],v=>v===libReg,e=>{libReg=e.target.value;renderLib()});
+  chips($('libsort'),'radio','libsort',[['region','By region'],['az','A–Z']],v=>v===libSort,e=>{libSort=e.target.value;renderLib()});
+  // a query matches a name, an alias, or metadata (region, subregion, UN status)
   const q=norm($('q').value);
-  let L=FLAGS.filter(f=>!q||[...f.a].some(a=>a.includes(q)));
+  let L=FLAGS.filter(f=>(libReg==='all'||f.reg===libReg)&&(!q||[...f.a,...f.tags].some(a=>a.includes(q))));
   if(libFilter==='marked')L=L.filter(f=>marks.has(f.n));
+  const byRegion=libFilter!=='missed'&&libSort==='region';
   if(libFilter==='missed')L=L.filter(f=>hist[f.n]&&prio(f)>=1).sort((a,b)=>prio(b)-prio(a));
+  else L.sort(byRegion?(a,b)=>REG_ORDER.indexOf(a.reg)-REG_ORDER.indexOf(b.reg)||a.s.localeCompare(b.s)||a.n.localeCompare(b.n):(a,b)=>a.n.localeCompare(b.n));
   const seen=Object.keys(hist).length;
-  $('libnote').textContent=`${marks.size} marked · ${seen} of ${FLAGS.length} flags seen. Red = needs work. A flag counts as known after about 3 correct typed answers in a row (multiple-choice answers count less, since guessing is easy). Tap ☆ to mark a flag, then play "Marked flags".`;
-  $('libgrid').innerHTML=L.map(f=>{const h=hist[f.n];const st=h?`<small class="${prio(f)>=1?'bad':''}">${(h[4]||0)>=KNOWN&&prio(f)<1?'known':'learning'} · missed ${h[1]}/${h[0]}${h[2]?` · ${(h[2]/1000).toFixed(1)}s`:''}</small>`:'<small>not seen yet</small>';
-    return `<div class="item"><img src="${f.f}" alt=""><span>${f.n}<br>${st}</span><button class="star" data-n="${f.n}" aria-pressed="${marks.has(f.n)}" aria-label="Mark ${f.n}">${marks.has(f.n)?'★':'☆'}</button></div>`}).join('')||'<p class="hint">Nothing here yet.</p>';
+  $('libnote').textContent=`${L.length} shown · ${marks.size} marked · ${seen} of ${FLAGS.length} flags seen. Search by name, region or subregion (try "oceania" or "caribbean"). Red = needs work. A flag counts as known after about 3 correct typed answers in a row (multiple-choice answers count less, since guessing is easy). Tap ☆ to mark a flag, then play "Marked flags".`;
+  let lastReg=null;
+  $('libgrid').innerHTML=L.map(f=>{const head=byRegion&&f.reg!==lastReg?`<h3>${f.reg} · ${L.filter(x=>x.reg===f.reg).length}</h3>`:'';lastReg=f.reg;const h=hist[f.n];const st=h?`<small class="${prio(f)>=1?'bad':''}">${(h[4]||0)>=KNOWN&&prio(f)<1?'known':'learning'} · missed ${h[1]}/${h[0]}${h[2]?` · ${(h[2]/1000).toFixed(1)}s`:''}</small>`:'<small>not seen yet</small>';
+    return head+`<div class="item"><img src="${f.f}" alt=""><span>${f.n}<small class="meta">${(byRegion?'':f.reg+' · ')+(f.s||f.reg)}${f.k==='un'?'':' · Non-UN'}</small>${st}</span><button class="star" data-n="${f.n}" aria-pressed="${marks.has(f.n)}" aria-label="Mark ${f.n}">${marks.has(f.n)?'★':'☆'}</button></div>`}).join('')||'<p class="hint">Nothing here yet.</p>';
 }
 $('q').addEventListener('input',renderLib);
 $('tabLib').onclick=()=>{if(G&&!$('game').hidden)finish();renderLib();show('library')};
