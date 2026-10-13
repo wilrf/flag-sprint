@@ -162,8 +162,8 @@ body.playing .wrap{padding-block:8px;gap:0}
 
 /* ---- refresh: quiet single column, text options, atlas library ---- */
 body{transition:background-color .3s ease,color .3s ease}
-.wrap{max-width:960px;padding-inline:24px}
-#setup,#game,#result{width:100%;max-width:560px;margin-inline:auto;box-sizing:border-box}
+.wrap{max-width:960px;padding-inline:24px;padding-block:16px 20px;gap:12px}
+#setup,#game,#result{width:100%;max-width:640px;margin-inline:auto;box-sizing:border-box}
 .panel{background:none;border:0;border-radius:0;padding:0}
 header{align-items:center;padding-block:4px 8px}
 .logo{font:600 15px var(--mono);letter-spacing:-.02em;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;min-height:44px}
@@ -176,22 +176,27 @@ nav button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--ink)}
 .mode{width:40px;height:40px;padding:0;border-radius:20px;display:grid;place-items:center;color:var(--mute);background:none}
 .mode:hover{color:var(--ink);border-color:var(--mute)}
 .sync{font-family:var(--sans);font-size:12px}
-.hero h2{margin:0;font-size:40px;font-weight:500;letter-spacing:-.035em;line-height:1.1}
-.hero p{margin:6px 0 0;color:var(--mute);font-size:16px}
-#setup{gap:0;padding-top:40px}
-#setup .hero{margin-bottom:28px}
-#setup>.group:not(.acct){display:grid;grid-template-columns:120px minmax(0,1fr);column-gap:16px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line);gap:0 16px}
+.hero h2{margin:0;font-size:34px;font-weight:500;letter-spacing:-.035em;line-height:1.1}
+.hero p{margin:4px 0 0;color:var(--mute);font-size:15px}
+#setup{gap:0;padding-top:12px}
+#setup .hero{margin-bottom:20px}
+#setup>.group:not(.acct){display:grid;grid-template-columns:104px minmax(0,1fr);column-gap:16px;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--line);gap:0 16px}
 .hero+.group{border-top:1px solid var(--line)}
-#setup>.group:not(.acct) .lbl{grid-column:1;margin:0;padding-top:12px}
+#setup>.group:not(.acct) .lbl{grid-column:1;margin:0;padding-top:8px}
 #setup>.group:not(.acct) .chips,#setup>.group:not(.acct) .desc{grid-column:2}
 .chips{gap:0 20px}
-.chip span,.chip input:checked+span{padding:10px 1px 8px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mute);font-size:15px}
+.chip span,.chip input:checked+span{padding:10px 1px 8px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mute);font-size:15px;padding-block:7px 5px}
 .chip:hover span{color:var(--ink)}
 .chip input:checked+span{color:var(--ink);border-bottom-color:var(--accent)}
-.desc{margin:0 0 6px}
+.desc{margin:0 0 4px}
 #setup .row,#setup .hint{margin-top:16px}
 #start{min-height:52px;min-width:180px;border-radius:10px;font-size:16px}
-#setup .acct{margin-top:40px}
+.poolcount{font-family:var(--sans);font-size:14px}
+#setup .acct{margin-top:20px;padding-top:14px}
+.acctrow{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;margin:0;font-size:13.5px;color:var(--mute)}
+.acctrow b{color:var(--ink);font-weight:500}
+.acctrow input{font:inherit;flex:1 1 180px;min-width:0;padding:6px 0;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink)}
+.acctrow input:focus{outline:none;border-bottom-color:var(--ink)}
 #library{display:flex;flex-direction:column;gap:18px;padding-top:32px}
 .libhead h2{margin:0;font-size:56px;font-weight:500;letter-spacing:-.04em;line-height:1}
 .libhead p{margin:8px 0 0;color:var(--mute);font-size:17px}
@@ -208,11 +213,19 @@ nav button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--ink)}
 .lib h3{margin:36px 0 0;padding-bottom:10px;border-bottom:1px solid var(--ink);font:500 30px var(--sans);letter-spacing:-.02em;text-transform:none;color:var(--ink)}
 .star[aria-pressed="true"]{color:var(--star)}
 .libfoot{border-top:1px solid var(--line);padding-top:18px;margin-top:24px}
-@media (pointer:coarse){.chip span,.chip input:checked+span{padding:12px 1px 10px}}
+@media (pointer:coarse){.chip span,.chip input:checked+span{padding-block:12px 10px}}
+@media (pointer:fine){#setup>.group.touchonly{display:none}}
 @media (max-width:520px){
   #setup>.group:not(.acct){grid-template-columns:1fr}
   #setup>.group:not(.acct) .lbl,#setup>.group:not(.acct) .chips,#setup>.group:not(.acct) .desc{grid-column:1}
-  .hero h2{font-size:32px}.libhead h2{font-size:40px}
+  .hero h2{font-size:28px}.libhead h2{font-size:40px}
+  #setup .hero{margin-bottom:12px}
+  #pool-d,#dur-d{display:none}
+  /* six thumb-sized settings can't fit a phone screen, so Start stays pinned and reachable */
+  #setup .row{position:sticky;bottom:0;z-index:3;margin-top:8px;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line)}
+  #start{flex:1}
+  #setup>.group:not(.acct) .lbl{padding-top:6px}
+  .chips{gap:0 16px}
   .lib{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 14px}
 }
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
@@ -255,22 +268,15 @@ nav button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--ink)}
       <p class="lbl">Vibrate on answers</p>
       <div class="chips" id="hap"></div>
     </div>
-    <p class="hint touchhint">On iPhone: the keyboard's Next key or the Skip button skips a flag; tap ☆ to mark one. Add this page to your Home Screen for a full-screen app.</p>
+    <p class="hint touchhint">Next or Skip skips a flag · ☆ marks one · Add to Home Screen for full screen</p>
     <div class="row">
       <button class="primary" id="start">Start</button>
       <span class="poolcount" id="count"></span>
     </div>
-    <p class="hint keyhint"><b>Type:</b> <kbd>Enter</kbd> skips a flag (counts as a miss). <kbd>Esc</kbd> or End stops the run. Unlimited runs until you stop it. Abbreviations work: USA, UK, UAE, DRC, Ivory Coast or Côte d'Ivoire.<br><b>Adaptive</b> shows each flag as multiple choice until you've picked it right 3 times, then makes you type it; a miss sends it back to multiple choice. <b>Learn pace</b> pauses the clock on a miss, shows the answer next to what you picked, and makes you type it once; the flag then returns a few flags later. <b>Sprint</b> never stops. Flags you miss or answer slowly come up more often; quick correct ones fade back. <kbd>/</kbd> marks the flag on screen for later review in either mode.<br><b>Multiple choice:</b> press <kbd>1</kbd>–<kbd>4</kbd> or click. A wrong pick shows the answer and counts as a miss.</p>
-    <div class="group acct" id="acct" hidden>
-      <p class="lbl">Sync across devices</p>
-      <div id="acctIn">
-        <form class="row" id="acctForm"><input id="email" type="email" required placeholder="you@example.com" aria-label="Email" autocomplete="email"><button>Email me a sign-in link</button></form>
-        <p class="desc">Optional. No password: we email you a link, and your progress then follows you to any device.</p>
-      </div>
-      <div id="acctOut" hidden>
-        <p class="who">Signed in as <b id="acctWho"></b> · <button type="button" class="link" id="signout">Sign out</button></p>
-        <p class="desc" style="margin-top:14px"><button type="button" class="link danger" id="delacct">Delete my account and progress</button></p>
-      </div>
+    <p class="hint keyhint"><kbd>Enter</kbd> skips · <kbd>Esc</kbd> ends · <kbd>/</kbd> marks a flag · <kbd>1</kbd>–<kbd>4</kbd> pick an answer</p>
+    <div class="acct" id="acct" hidden>
+      <div id="acctIn"><form class="acctrow" id="acctForm"><label for="email">Sync across devices</label><input id="email" type="email" required placeholder="you@example.com" autocomplete="email"><button class="link">Email me a link</button></form></div>
+      <p class="acctrow" id="acctOut" hidden>Signed in as <b id="acctWho"></b> · <button type="button" class="link" id="signout">Sign out</button> · <button type="button" class="link danger" id="delacct">Delete account</button></p>
     </div>
   </section>
 
@@ -324,7 +330,7 @@ const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/&
 FLAGS.forEach(f=>{f.a=new Set([...f.a,...(EXTRA[f.n]||[])]);f.reg=f.r==='Americas'?(f.s==='South America'?'South America':'North America'):f.r;f.meta=[f.s,f.reg,f.k==='un'?'UN member':'Non-UN'].filter((v,i,a)=>v&&a.indexOf(v)===i);f.tags=[f.r,...f.meta].map(norm);});
 
 const DURS=[30,60,120,180,0]; // 0 = unlimited
-const POOLS=[['un','UN members (194)'],['all','Everything (250)'],['weak','My weak flags'],['marked','Marked flags']];
+const POOLS=[['un','UN members'],['all','Everything'],['weak','Weak'],['marked','Marked']];
 const REGS=['Africa','Asia','Europe','North America','South America','Oceania'];
 const store={get(k,d){try{const v=localStorage.getItem('fs.'+k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem('fs.'+k,JSON.stringify(v))}catch{}}};
 const DEF={pace:'learn',hap:true,mode:'adaptive',dur:120,pool:'un',regs:REGS.slice()};
