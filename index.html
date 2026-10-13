@@ -7,15 +7,18 @@
 :root{
   --bg:#fbfbf9; --panel:#ffffff; --ink:#1a1b1e; --mute:#6e6f73; --line:#dcdcd8;
   --accent:#23407a; --good:#4f8a63; --bad:#b4472f; --flagbg:#efefeb; --star:#a87a1e;
+  --motif:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280' fill='none' stroke='%231a1b1e' stroke-opacity='.09' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='50' cy='52' r='18'/><ellipse cx='50' cy='52' rx='8' ry='18'/><path d='M32 52h36M35 43h30M35 61h30'/><path d='M182 26v38'/><path d='M182 28c6-3 11 3 17 0s11-3 17 0v14c-6-3-11 3-17 0s-11-3-17 0'/><circle cx='214' cy='196' r='14'/><path d='M214 185l4 11-4 11-4-11z'/><path d='M70 222s-12-12-12-21a12 12 0 0 1 24 0c0 9-12 21-12 21z'/><circle cx='70' cy='201' r='4'/><path d='M92 118c28-18 62-8 84 22' stroke-dasharray='2 6'/><circle cx='250' cy='112' r='9'/><path d='M241 112h18M250 103c-4 5-4 13 0 18M250 103c4 5 4 13 0 18'/></svg>");
   --mono:"Martian Mono",ui-monospace,Menlo,Consolas,monospace;
   --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#121315; --panel:#1a1b1e; --ink:#ecebe6; --mute:#9c9da1; --line:#2e3034;
-  --accent:#9db4e6; --good:#6db585; --bad:#e07a62; --flagbg:#202226; --star:#d9ae55; color-scheme:dark}}
+  --accent:#9db4e6; --good:#6db585; --bad:#e07a62; --flagbg:#202226; --star:#d9ae55; color-scheme:dark;
+  --motif:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280' fill='none' stroke='%23ffffff' stroke-opacity='.07' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='50' cy='52' r='18'/><ellipse cx='50' cy='52' rx='8' ry='18'/><path d='M32 52h36M35 43h30M35 61h30'/><path d='M182 26v38'/><path d='M182 28c6-3 11 3 17 0s11-3 17 0v14c-6-3-11 3-17 0s-11-3-17 0'/><circle cx='214' cy='196' r='14'/><path d='M214 185l4 11-4 11-4-11z'/><path d='M70 222s-12-12-12-21a12 12 0 0 1 24 0c0 9-12 21-12 21z'/><circle cx='70' cy='201' r='4'/><path d='M92 118c28-18 62-8 84 22' stroke-dasharray='2 6'/><circle cx='250' cy='112' r='9'/><path d='M241 112h18M250 103c-4 5-4 13 0 18M250 103c4 5 4 13 0 18'/></svg>")}}
 :root[data-theme="dark"]{
   --bg:#121315; --panel:#1a1b1e; --ink:#ecebe6; --mute:#9c9da1; --line:#2e3034;
-  --accent:#9db4e6; --good:#6db585; --bad:#e07a62; --flagbg:#202226; --star:#d9ae55; color-scheme:dark}
+  --accent:#9db4e6; --good:#6db585; --bad:#e07a62; --flagbg:#202226; --star:#d9ae55; color-scheme:dark;
+  --motif:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280' fill='none' stroke='%23ffffff' stroke-opacity='.07' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='50' cy='52' r='18'/><ellipse cx='50' cy='52' rx='8' ry='18'/><path d='M32 52h36M35 43h30M35 61h30'/><path d='M182 26v38'/><path d='M182 28c6-3 11 3 17 0s11-3 17 0v14c-6-3-11 3-17 0s-11-3-17 0'/><circle cx='214' cy='196' r='14'/><path d='M214 185l4 11-4 11-4-11z'/><path d='M70 222s-12-12-12-21a12 12 0 0 1 24 0c0 9-12 21-12 21z'/><circle cx='70' cy='201' r='4'/><path d='M92 118c28-18 62-8 84 22' stroke-dasharray='2 6'/><circle cx='250' cy='112' r='9'/><path d='M241 112h18M250 103c-4 5-4 13 0 18M250 103c4 5 4 13 0 18'/></svg>")}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
 .wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:28px 48px;display:flex;flex-direction:column;gap:22px}
@@ -162,6 +165,9 @@ body.playing .wrap{padding-block:8px;gap:0}
 
 /* ---- refresh: quiet single column, text options, atlas library ---- */
 body{transition:background-color .3s ease,color .3s ease}
+/* faint atlas line art behind the page: strongest at the edges, clear behind the content, gone during a run */
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--motif) 0 0/280px 280px;-webkit-mask-image:radial-gradient(ellipse 55% 65% at 50% 45%,transparent 30%,#000 90%);mask-image:radial-gradient(ellipse 55% 65% at 50% 45%,transparent 30%,#000 90%)}
+body.playing::before{display:none}
 .wrap{max-width:960px;padding-inline:24px;padding-block:16px 20px;gap:12px}
 #setup,#game,#result{width:100%;max-width:640px;margin-inline:auto;box-sizing:border-box}
 #setup{max-width:780px} /* after the shared rule, which would otherwise win */
