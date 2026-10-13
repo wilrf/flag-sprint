@@ -40,6 +40,13 @@ button.primary{background:var(--accent);border-color:var(--accent);color:var(--p
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .poolcount{font-family:var(--mono);font-size:12px;color:var(--mute)}
 .hint{color:var(--mute);font-size:13px;margin:0}
+.desc{color:var(--mute);font-size:13px;margin:2px 0 0}
+.acct{border-top:1px solid var(--line);padding-top:18px}
+.acct .who{font-size:13.5px;color:var(--mute)}
+.acct .who b{color:var(--ink);font-weight:500}
+.link{padding:0;border:0;background:none;color:var(--accent);font-size:13px;text-decoration:underline;text-underline-offset:2px}
+.link.danger{color:var(--bad)}
+@media (pointer:fine){.touchonly{display:none}}
 kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 5px;background:var(--bg)}
 
 /* game */
@@ -160,34 +167,33 @@ body.playing .wrap{padding-block:8px;gap:0}
   </header>
 
   <section id="setup" class="panel settings">
-    <div class="group" id="acct" hidden>
-      <p class="lbl">Account</p>
-      <form class="row" id="acctIn"><input id="email" type="email" required placeholder="you@example.com" aria-label="Email" autocomplete="email"><button class="primary">Email me a sign-in link</button></form>
-      <div class="row" id="acctOut" hidden><span class="hint" id="acctWho"></span><button type="button" id="signout">Sign out</button><button type="button" id="delacct">Delete my account</button></div>
-    </div>
-    <div class="group">
-      <p class="lbl">Mode</p>
-      <div class="chips" id="mode"></div>
-    </div>
-    <div class="group">
-      <p class="lbl">Pace</p>
-      <div class="chips" id="pace"></div>
-    </div>
-    <div class="group">
-      <p class="lbl">Haptics</p>
-      <div class="chips" id="hap"></div>
-    </div>
-    <div class="group">
-      <p class="lbl">Duration</p>
-      <div class="chips" id="dur"></div>
-    </div>
     <div class="group">
       <p class="lbl">Flag set</p>
       <div class="chips" id="pool"></div>
+      <p class="desc" id="pool-d"></p>
     </div>
     <div class="group">
       <p class="lbl">Regions</p>
       <div class="chips" id="regions"></div>
+    </div>
+    <div class="group">
+      <p class="lbl">How you answer</p>
+      <div class="chips" id="mode"></div>
+      <p class="desc" id="mode-d"></p>
+    </div>
+    <div class="group">
+      <p class="lbl">Pace</p>
+      <div class="chips" id="pace"></div>
+      <p class="desc" id="pace-d"></p>
+    </div>
+    <div class="group">
+      <p class="lbl">Duration</p>
+      <div class="chips" id="dur"></div>
+      <p class="desc" id="dur-d"></p>
+    </div>
+    <div class="group touchonly">
+      <p class="lbl">Vibrate on answers</p>
+      <div class="chips" id="hap"></div>
     </div>
     <p class="hint touchhint">On iPhone: the keyboard's Next key or the Skip button skips a flag; tap ☆ to mark one. Add this page to your Home Screen for a full-screen app.</p>
     <div class="row">
@@ -195,6 +201,17 @@ body.playing .wrap{padding-block:8px;gap:0}
       <span class="poolcount" id="count"></span>
     </div>
     <p class="hint keyhint"><b>Type:</b> <kbd>Enter</kbd> skips a flag (counts as a miss). <kbd>Esc</kbd> or End stops the run. Unlimited runs until you stop it. Abbreviations work: USA, UK, UAE, DRC, Ivory Coast or Côte d'Ivoire.<br><b>Adaptive</b> shows each flag as multiple choice until you've picked it right 3 times, then makes you type it; a miss sends it back to multiple choice. <b>Learn pace</b> pauses the clock on a miss, shows the answer next to what you picked, and makes you type it once; the flag then returns a few flags later. <b>Sprint</b> never stops. Flags you miss or answer slowly come up more often; quick correct ones fade back. <kbd>/</kbd> marks the flag on screen for later review in either mode.<br><b>Multiple choice:</b> press <kbd>1</kbd>–<kbd>4</kbd> or click. A wrong pick shows the answer and counts as a miss.</p>
+    <div class="group acct" id="acct" hidden>
+      <p class="lbl">Sync across devices</p>
+      <div id="acctIn">
+        <form class="row" id="acctForm"><input id="email" type="email" required placeholder="you@example.com" aria-label="Email" autocomplete="email"><button>Email me a sign-in link</button></form>
+        <p class="desc">Optional. No password: we email you a link, and your progress then follows you to any device.</p>
+      </div>
+      <div id="acctOut" hidden>
+        <p class="who">Signed in as <b id="acctWho"></b> · <button type="button" class="link" id="signout">Sign out</button></p>
+        <p class="desc" style="margin-top:14px"><button type="button" class="link danger" id="delacct">Delete my account and progress</button></p>
+      </div>
+    </div>
   </section>
 
   <section id="game" class="panel" hidden>
@@ -272,9 +289,18 @@ function renderSetup(){
   chips($('dur'),'radio','dur',DURS.map(d=>[d,d?d+'s':'Unlimited']),v=>+v===cfg.dur,e=>{cfg.dur=+e.target.value;save()});
   chips($('pool'),'radio','pool',POOLS,v=>v===cfg.pool,e=>{cfg.pool=e.target.value;save()});
   chips($('regions'),'checkbox','reg',REGS.map(r=>[r,r]),v=>cfg.regs.includes(v),()=>{cfg.regs=[...$('regions').querySelectorAll('input:checked')].map(i=>i.value);save()});
-  updCount();
+  updCount();describe();
 }
-function save(){persist();updCount()}
+const DESC={
+  pool:{un:'The 194 UN member states.',all:'Adds territories and partly recognized states.',weak:'Up to 40 flags you miss or answer slowly.',marked:'Flags you starred with ☆.'},
+  mode:{adaptive:'Multiple choice until you know a flag, then you type it.',type:'Type every answer. Abbreviations like USA and UK work.',mc:'Pick from four names. Keys 1–4 work too.'},
+  pace:{learn:'A miss pauses the clock and shows the answer. The flag comes back soon.',sprint:'The clock never stops. Misses come up more often later.'},
+};
+function describe(){
+  for(const k in DESC)$(k+'-d').textContent=DESC[k][cfg[k]]||'';
+  $('dur-d').textContent=cfg.dur?'Name as many as you can before time runs out.':'Runs until you press End.';
+}
+function save(){persist();updCount();describe()}
 // hist[name] = [seen, missed, avg ms on correct answers (moving average), last answer wrong 0/1, evidence since last miss]
 // evidence: a typed correct answer counts 1, a multiple-choice correct counts 0.4 (a 1-in-4 guess is easy).
 // A flag needs KNOWN=3 evidence in a row before it is treated as learned, so one lucky answer cannot bury it.
@@ -509,7 +535,7 @@ function mergeStates(local,remote){
 async function connect(user){
   if((user&&user.id)===uid)return; // token refreshes re-fire auth events; only act when the player changes
   uid=user?user.id:null;cloud=null;
-  $('acctIn').hidden=!!user;$('acctOut').hidden=!user;$('acctWho').textContent=user?'Signed in as '+user.email:'';
+  $('acctIn').hidden=!!user;$('acctOut').hidden=!user;$('acctWho').textContent=user?user.email:'';
   if(!user){sync(false);return}
   const {data,error}=await sb.from('flag_sprint_state').select('state').eq('user_id',uid).maybeSingle();
   if(error){sync(false,'Account load failed, kept in this browser');return}
@@ -522,7 +548,7 @@ async function connect(user){
 }
 if(sb){
   $('acct').hidden=false;
-  $('acctIn').onsubmit=async e=>{
+  $('acctForm').onsubmit=async e=>{
     e.preventDefault();
     const {error}=await sb.auth.signInWithOtp({email:$('email').value,options:{emailRedirectTo:location.origin+location.pathname}});
     sync(false,error?'Could not send the link: '+error.message:'Check your email for the sign-in link');
