@@ -1,21 +1,21 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Flag Sprint</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: one centered column, a fixed-height drill stage; the timer and score read like a scoreboard strip. */
 :root{
-  --bg:#f3f4f1; --panel:#ffffff; --ink:#1b1f24; --mute:#6a7078; --line:#d8dbd5;
-  --accent:#1d4ed8; --good:#15803d; --bad:#b42318; --flagbg:#e6e8e3;
+  --bg:#fbfbf9; --panel:#ffffff; --ink:#1a1b1e; --mute:#6e6f73; --line:#dcdcd8;
+  --accent:#23407a; --good:#4f8a63; --bad:#b4472f; --flagbg:#efefeb; --star:#a87a1e;
   --mono:"Martian Mono",ui-monospace,Menlo,Consolas,monospace;
-  --sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#121417; --panel:#1a1d21; --ink:#e7e9ec; --mute:#8e949c; --line:#2c3036;
-  --accent:#7ea2ff; --good:#4ade80; --bad:#f87171; --flagbg:#22262b; color-scheme:dark}}
+  --bg:#121315; --panel:#1a1b1e; --ink:#ecebe6; --mute:#9c9da1; --line:#2e3034;
+  --accent:#9db4e6; --good:#6db585; --bad:#e07a62; --flagbg:#202226; --star:#d9ae55; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#121417; --panel:#1a1d21; --ink:#e7e9ec; --mute:#8e949c; --line:#2c3036;
-  --accent:#7ea2ff; --good:#4ade80; --bad:#f87171; --flagbg:#22262b; color-scheme:dark}
+  --bg:#121315; --panel:#1a1b1e; --ink:#ecebe6; --mute:#9c9da1; --line:#2e3034;
+  --accent:#9db4e6; --good:#6db585; --bad:#e07a62; --flagbg:#202226; --star:#d9ae55; color-scheme:dark}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
 .wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:28px 48px;display:flex;flex-direction:column;gap:22px}
@@ -159,17 +159,74 @@ body.playing .wrap{padding-block:8px;gap:0}
 .inrow{display:flex;gap:8px;width:min(100%,360px)}
 .inrow #answer{flex:1;min-width:0;width:auto}
 #hapsw{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+
+/* ---- refresh: quiet single column, text options, atlas library ---- */
+body{transition:background-color .3s ease,color .3s ease}
+.wrap{max-width:960px;padding-inline:24px}
+#setup,#game,#result{width:100%;max-width:560px;margin-inline:auto;box-sizing:border-box}
+.panel{background:none;border:0;border-radius:0;padding:0}
+header{align-items:center;padding-block:4px 8px}
+.logo{font:600 15px var(--mono);letter-spacing:-.02em;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;min-height:44px}
+.logo span{color:var(--accent)}
+.logo:focus-visible,.mode:focus-visible{outline:1px solid var(--accent);outline-offset:3px}
+nav{gap:28px}
+nav button,nav button[aria-current="page"]{padding:10px 0;border:0;border-bottom:1px solid transparent;border-radius:0;background:none;font-size:14px;font-weight:400;color:var(--mute)}
+nav button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--ink)}
+.hdr-end{display:flex;align-items:center;gap:16px}
+.mode{width:40px;height:40px;padding:0;border-radius:20px;display:grid;place-items:center;color:var(--mute);background:none}
+.mode:hover{color:var(--ink);border-color:var(--mute)}
+.sync{font-family:var(--sans);font-size:12px}
+.hero h2{margin:0;font-size:40px;font-weight:500;letter-spacing:-.035em;line-height:1.1}
+.hero p{margin:6px 0 0;color:var(--mute);font-size:16px}
+#setup{gap:0;padding-top:40px}
+#setup .hero{margin-bottom:28px}
+#setup>.group:not(.acct){display:grid;grid-template-columns:120px minmax(0,1fr);column-gap:16px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line);gap:0 16px}
+.hero+.group{border-top:1px solid var(--line)}
+#setup>.group:not(.acct) .lbl{grid-column:1;margin:0;padding-top:12px}
+#setup>.group:not(.acct) .chips,#setup>.group:not(.acct) .desc{grid-column:2}
+.chips{gap:0 20px}
+.chip span,.chip input:checked+span{padding:10px 1px 8px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mute);font-size:15px}
+.chip:hover span{color:var(--ink)}
+.chip input:checked+span{color:var(--ink);border-bottom-color:var(--accent)}
+.desc{margin:0 0 6px}
+#setup .row,#setup .hint{margin-top:16px}
+#start{min-height:52px;min-width:180px;border-radius:10px;font-size:16px}
+#setup .acct{margin-top:40px}
+#library{display:flex;flex-direction:column;gap:18px;padding-top:32px}
+.libhead h2{margin:0;font-size:56px;font-weight:500;letter-spacing:-.04em;line-height:1}
+.libhead p{margin:8px 0 0;color:var(--mute);font-size:17px}
+#library .row{justify-content:space-between;align-items:flex-end}
+#q,#q:focus{width:100%;flex:1 1 320px;font-size:24px;padding:10px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none}
+#q:focus{border-bottom-color:var(--ink)}
+.lib{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:30px 22px}
+.lib .item{flex-direction:column;align-items:stretch;gap:10px;padding:0;border:0;background:none;font-size:15px}
+.lib .item img{width:100%;height:auto;aspect-ratio:3/2;object-fit:contain;border-radius:2px;box-shadow:0 0 0 1px var(--line);transition:transform .25s ease}
+.lib .item:hover img{transform:translateY(-2px)}
+.lib .item span{font-weight:500}
+.lib .item small{font-family:var(--sans);font-weight:400}
+.lib .item .star{position:absolute;top:4px;right:4px;background:color-mix(in srgb,var(--panel) 80%,transparent);border-radius:4px}
+.lib h3{margin:36px 0 0;padding-bottom:10px;border-bottom:1px solid var(--ink);font:500 30px var(--sans);letter-spacing:-.02em;text-transform:none;color:var(--ink)}
+.star[aria-pressed="true"]{color:var(--star)}
+.libfoot{border-top:1px solid var(--line);padding-top:18px;margin-top:24px}
+@media (pointer:coarse){.chip span,.chip input:checked+span{padding:12px 1px 10px}}
+@media (max-width:520px){
+  #setup>.group:not(.acct){grid-template-columns:1fr}
+  #setup>.group:not(.acct) .lbl,#setup>.group:not(.acct) .chips,#setup>.group:not(.acct) .desc{grid-column:1}
+  .hero h2{font-size:32px}.libhead h2{font-size:40px}
+  .lib{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 14px}
+}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
 
 <div class="wrap">
   <header>
-    <h1>flag<span>/</span>sprint</h1>
+    <h1><a class="logo" href="./" id="logo" aria-label="flag/sprint, home">flag<span>/</span>sprint</a></h1>
     <nav><button id="tabPlay" aria-current="page">Play</button><button id="tabLib">Library</button></nav>
-    <div class="sync" id="sync">Saved in this browser</div>
+    <div class="hdr-end"><div class="sync" id="sync" role="status"></div><button class="mode" id="mode-t" type="button"></button></div>
   </header>
 
   <section id="setup" class="panel settings">
+    <div class="hero"><h2>Name the flag.</h2><p>Pick a set, then go as far as you can.</p></div>
     <div class="group">
       <p class="lbl">Flag set</p>
       <div class="chips" id="pool"></div>
@@ -245,6 +302,7 @@ body.playing .wrap{padding-block:8px;gap:0}
   </section>
 
 <section id="library" class="panel settings" hidden>
+  <div class="libhead"><h2>The Library</h2><p>Every flag you play, gathered by region.</p></div>
   <div class="row" style="justify-content:space-between">
     <input id="q" placeholder="Search countries" aria-label="Search countries" autocomplete="off">
     <div class="chips" id="libf"></div>
@@ -253,6 +311,7 @@ body.playing .wrap{padding-block:8px;gap:0}
   <div class="row"><span class="hint">Sort</span><div class="chips" id="libsort"></div></div>
   <p class="hint" id="libnote"></p>
   <div class="list lib" id="libgrid"></div>
+  <p class="hint libfoot">Search by name, region or subregion. A flag counts as known after about 3 correct typed answers in a row; multiple-choice answers count less, since guessing is easy. Tap ☆ to mark a flag, then play "Marked flags".</p>
 </section>
 </div>
 <label id="haplbl" aria-hidden="true"><input type="checkbox" switch id="hapsw" tabindex="-1"></label>
@@ -279,7 +338,7 @@ function persist(){
   clearTimeout(saveTimer);
   if(cloud)saveTimer=setTimeout(()=>cloud.set(S).then(()=>sync(true),()=>sync(false,'Account save failed, kept in this browser')),600);
 }
-function sync(on,msg){$('sync').textContent=msg||(on?'Synced to your account':'Saved in this browser');$('sync').classList.toggle('on',on)}
+function sync(on,msg){$('sync').textContent=msg||'';$('sync').classList.toggle('on',on)} // speak only when something needs the player
 
 
 const $=id=>document.getElementById(id);
@@ -518,12 +577,23 @@ function renderLib(){
   if(libFilter==='missed')L=L.filter(f=>hist[f.n]&&prio(f)>=1).sort((a,b)=>prio(b)-prio(a));
   else L.sort(byRegion?(a,b)=>REG_ORDER.indexOf(a.reg)-REG_ORDER.indexOf(b.reg)||a.s.localeCompare(b.s)||a.n.localeCompare(b.n):(a,b)=>a.n.localeCompare(b.n));
   const seen=Object.keys(hist).length;
-  $('libnote').textContent=`${L.length} shown · ${marks.size} marked · ${seen} of ${FLAGS.length} flags seen. Search by name, region or subregion (try "oceania" or "caribbean"). Red = needs work. A flag counts as known after about 3 correct typed answers in a row (multiple-choice answers count less, since guessing is easy). Tap ☆ to mark a flag, then play "Marked flags".`;
+  $('libnote').textContent=`${L.length} shown · ${seen} of ${FLAGS.length} seen · ${marks.size} marked`;
   let lastReg=null;
   $('libgrid').innerHTML=L.map(f=>{const head=byRegion&&f.reg!==lastReg?`<h3>${f.reg} · ${L.filter(x=>x.reg===f.reg).length}</h3>`:'';lastReg=f.reg;const h=hist[f.n];const st=h?`<small class="${prio(f)>=1?'bad':''}">${(h[4]||0)>=KNOWN&&prio(f)<1?'known':'learning'} · missed ${h[1]}/${h[0]}${h[2]?` · ${(h[2]/1000).toFixed(1)}s`:''}</small>`:'<small>not seen yet</small>';
     return head+`<div class="item"><img src="${f.f}" alt=""><span>${f.n}<small class="meta">${(byRegion?'':f.reg+' · ')+(f.s||f.reg)}${f.k==='un'?'':' · Non-UN'}</small>${st}</span><button class="star" data-n="${f.n}" aria-pressed="${marks.has(f.n)}" aria-label="Mark ${f.n}">${marks.has(f.n)?'★':'☆'}</button></div>`}).join('')||'<p class="hint">Nothing here yet.</p>';
 }
 $('q').addEventListener('input',renderLib);
+$('logo').onclick=e=>{e.preventDefault();$('tabPlay').click()};
+const SUN='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>';
+const MOON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+// no saved choice = follow the device; the button always flips whatever is showing now
+function applyTheme(t){
+  if(t)document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme;
+  const dark=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;
+  $('mode-t').innerHTML=dark?SUN:MOON;$('mode-t').setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+}
+applyTheme(store.get('theme',null));
+$('mode-t').onclick=()=>{const t=$('mode-t').getAttribute('aria-label').includes('dark')?'dark':'light';store.set('theme',t);applyTheme(t)};
 $('tabLib').onclick=()=>{if(G&&!$('game').hidden)finish();renderLib();show('library')};
 $('tabPlay').onclick=()=>{G=null;renderSetup();show('setup')};
 let lastDrill=null;
