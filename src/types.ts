@@ -1,0 +1,15 @@
+export type Pool='un'|'all'|'weak'|'marked';
+export type Mode='adaptive'|'type'|'mc';
+export type Pace='learn'|'sprint';
+export type Region='Africa'|'Asia'|'Europe'|'North America'|'South America'|'Oceania'|'Antarctic';
+export type Dest='world'|'Africa'|'Asia'|'Europe'|'Americas'|'Oceania'|'Antarctica';
+export type Duration=30|60|120|180|0;
+export type RawFlag={n:string;a:string[];r:string;s:string;k:'un'|'terr';f:string};
+export type Flag=Omit<RawFlag,'a'>&{a:Set<string>;reg:string;meta:string[];tags:string[]};
+export type HistEntry=[seen:number,missed:number,avgMs:number,lastWrong:number,evidence:number];
+export type Cfg={pace:Pace;hap:boolean;mode:Mode;dur:Duration;pool:Pool;dest:Dest;regs:string[]};
+export type SaveState={hist:Record<string,HistEntry>;marks:string[];best:Record<string,number>;cfg:Partial<Cfg>;conf?:Record<string,Record<string,number>>;kat?:Record<string,number>;t:number};
+export type FlightRoute={code:string;pool:Pool;dest:Dest;text:string}&({dest:'Antarctica';pool:'all'}|{mode:Mode;dur:Duration});
+export type Option<T extends string|number=string|number>=readonly [T,string,number?];
+export type PassCol<T extends object>={[K in Extract<keyof T,string>]:T[K] extends string|number?{k:K;label:string;opts:readonly Option<T[K]>[];short?:Partial<Record<string|number,string>>;big?:boolean}:never}[Extract<keyof T,string>];
+export type PassFields=Pick<Cfg,'pool'|'dest'|'mode'|'dur'>;
