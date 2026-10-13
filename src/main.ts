@@ -1,7 +1,7 @@
 import './styles.css';
 import type {SupabaseClient,User} from '@supabase/supabase-js';
 import type {Cfg,Flag,Option,PassCol,PassFields,RawFlag,SaveState} from './types';
-import {norm,KNOWN,MC_DONE,REGS,POOLS,MODES,TIMES,destinationOptions,destRegs,prio,applyAnswer,flightCode,parseFlight,isKnown,needsWork} from './logic';
+import {candidates,norm,KNOWN,MC_DONE,REGS,POOLS,MODES,TIMES,destinationOptions,destRegs,prio,applyAnswer,flightCode,parseFlight,isKnown,needsWork} from './logic';
 const {default:RAW}=await import('./flags.json');
 const EXTRA:Record<string,string[]>={'United States':['us','america'],'United Kingdom':['uk','britain','greatbritain'],'Netherlands':['holland'],'Myanmar':['burma'],'Eswatini':['swaziland'],'North Macedonia':['macedonia'],'Czechia':['czechrepublic'],'Turkey':['turkiye'],'Timor-Leste':['easttimor'],'Cape Verde':['caboverde'],'Vatican City':['vatican','holysee'],'Republic of the Congo':['congobrazzaville'],'South Korea':['korea'],'Russia':['russianfederation']};
 const FLAGS:Flag[]=(RAW as RawFlag[]).map(f=>{
@@ -10,7 +10,7 @@ const FLAGS:Flag[]=(RAW as RawFlag[]).map(f=>{
 });
 
 const store={get<T>(k:string,d:T):T{try{const v=localStorage.getItem('fs.'+k);return v?JSON.parse(v) as T:d}catch{return d}},set(k:string,v:unknown){try{localStorage.setItem('fs.'+k,JSON.stringify(v))}catch{}}};
-const DEF:Cfg={pace:'learn',hap:true,mode:'adaptive',dur:120,pool:'un',dest:'world',regs:REGS.slice()};
+const DEF:Cfg={pace:'learn',hap:true,kbd:'app',mode:'adaptive',dur:120,pool:'un',dest:'world',regs:REGS.slice()};
 // everything worth keeping lives in one object: history, marks, best scores, settings
 let S:SaveState=store.get<SaveState|null>('state',null)||{hist:store.get('hist',{}),marks:[],best:{},cfg:store.get('cfg',{}),t:0};
 let cfg=Object.assign({},DEF,S.cfg),hist=S.hist,marks=new Set(S.marks);
@@ -34,6 +34,7 @@ function chips(el:HTMLElement,type:string,name:string,items:Option<string>[],isO
 }
 function renderSetup(){
   chips($('pace'),'radio','pace',[['learn','Learn'],['sprint','Sprint']],v=>v===cfg.pace,e=>{if(e.target instanceof HTMLInputElement&&(e.target.value==='learn'||e.target.value==='sprint')){cfg.pace=e.target.value;save()}});
+  chips($('kbd'),'radio','kbd',[['app','Flag Sprint'],['system','System']],v=>v===cfg.kbd,e=>{if(e.target instanceof HTMLInputElement&&(e.target.value==='app'||e.target.value==='system')){cfg.kbd=e.target.value;save()}});
   chips($('hap'),'radio','hap',[['1','On'],['0','Off']],v=>(v==='1')===cfg.hap,e=>{if(e.target instanceof HTMLInputElement){cfg.hap=e.target.value==='1';save();buzz(true)}});
   renderPass();updCount();
 }
@@ -106,14 +107,14 @@ document.addEventListener('keydown',e=>{
 });
 function updCount(){
   const n=buildPool().length;
-  $('count').textContent=n?`${n} flags`:(cfg.pool==='weak'?'No weak flags here yet':cfg.pool==='marked'?'No marked flags here yet':'No flags here');
+  $('count').textContent=n?`${n} flag${n===1?'':'s'}`:(cfg.pool==='weak'?'No weak flags here yet':cfg.pool==='marked'?'No marked flags here yet':'No flags here');
   $<HTMLButtonElement>('start').disabled=!n;
 }
 
 function fit(){
   const vv=window.visualViewport,h=vv?vv.height:innerHeight;
   document.documentElement.style.setProperty('--vvh',h+'px');
-  document.documentElement.style.setProperty('--chrome',(G&&G.mc?330:230)+'px');
+  document.documentElement.style.setProperty('--chrome',(G&&G.mc?330:230+($('kb').hidden?0:$('kb').offsetHeight))+'px');
   if(G&&!$('game').hidden&&innerWidth<=820)window.scrollTo(0,0);
 }
 interface RunState{
@@ -134,8 +135,7 @@ function next(){
   G.shown++;
   const shown=G.shown,cur=G.cur,d=G.due.findIndex(x=>x.at<=shown&&x.f!==cur);
   if(d>=0){G.cur=G.due.splice(d,1)[0].f;G.recent.push(G.cur);G.seen.add(G.cur);$<HTMLImageElement>('flag').src=G.cur.f;starBtn($('flagstar'),G.cur);G.t0=performance.now();applyMode();return}
-  const cool=Math.min(5,G.pool.length-1),recent=G.recent.slice(-cool);
-  const cand=G.pool.filter(f=>!recent.includes(f)),ws=cand.map(f=>prio(hist[f.n]));
+  const cand=candidates(G.pool,G.recent),ws=cand.map(f=>prio(hist[f.n]));
   let r=Math.random()*ws.reduce((a,b)=>a+b,0),i=0;
   while(i<ws.length-1&&(r-=ws[i])>0)i++;
   G.cur=cand[i];G.recent.push(G.cur);G.seen.add(G.cur);$<HTMLImageElement>('flag').src=G.cur.f;starBtn($('flagstar'),G.cur);G.t0=performance.now();
@@ -147,6 +147,7 @@ function applyMode(){
   const e=(hist[G.cur.n]||[])[4]||0;
   G.mc=G.mode==='mc'||(G.mode==='adaptive'&&e<MC_DONE);
   $('choices').hidden=!G.mc;$('answer').parentElement!.hidden=G.mc;
+  showKb(!G.mc);
   if(G.mc)renderChoices();else $('answer').focus();
   fit();
 }
@@ -211,13 +212,13 @@ function endReview(){
   next();
 }
 $('rvGo').onclick=endReview;
-$('skip').onclick=()=>{if(!G)return;$('answer').focus();$('answer').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'}))};
+$('skip').onclick=()=>{if(!G)return;$<HTMLInputElement>('answer').value='';submit();$('answer').focus()};
 // correct answer: Learn holds the flag with its name for a beat; Sprint moves on at once
 function advance(){
   if(!G||!G.cur)return;
   if(!G.learn){$('last').textContent='';next();return}
   G.lock=true;$('last').innerHTML='<span class="gotit"></span>';$('last').firstChild!.textContent='✓ '+G.cur.n;
-  setTimeout(()=>{if(!G)return;G.lock=false;next();const v=$<HTMLInputElement>('answer').value;if(v&&!G.mc)$('answer').dispatchEvent(new Event('input'))},550);
+  setTimeout(()=>{if(!G)return;G.lock=false;next()},550);
 }
 function rec(f:Flag,miss:boolean,ms=0){
   const h=applyAnswer(hist[f.n],miss,ms,!!G&&G.mc);
@@ -236,25 +237,56 @@ function tick(){
   $('bar').style.transform=`scaleX(${left/G.dur})`;
   if(left<=0)finish();
 }
+// typing never answers on its own: Enter submits, so a wrong guess can't be quietly corrected
 $<HTMLInputElement>('answer').addEventListener('input',e=>{
-  if(!G||!G.cur||G.lock||!(e.target instanceof HTMLInputElement))return;
-  if(G.rv){if(G.cur.a.has(norm(e.target.value)))endReview();return}
-  if(G.cur.a.has(norm(e.target.value))){
-    G.score++;const ms=performance.now()-G.t0;G.times.push([G.cur,ms]);rec(G.cur,false,ms);
-    e.target.value='';$('score').textContent=String(G.score);
-    fx(true);advance();
-  }
+  if(!G||!G.cur||!G.rv||!(e.target instanceof HTMLInputElement))return;
+  if(G.cur.a.has(norm(e.target.value)))endReview(); // Learn's "type the name to continue" is copying, not answering
 });
+// Enter with the right name scores; a wrong name is a miss (and noted as a mix-up); empty is a skip
+function submit(){
+  if(!G||!G.cur||G.rv||G.lock||G.mc)return;
+  const input=$<HTMLInputElement>('answer'),v=norm(input.value);
+  if(v&&G.cur.a.has(v)){
+    G.score++;const ms=performance.now()-G.t0;G.times.push([G.cur,ms]);rec(G.cur,false,ms);
+    input.value='';$('score').textContent=String(G.score);
+    fx(true);advance();return;
+  }
+  const other=v?FLAGS.find(f=>f!==G?.cur&&f.a.has(v)):undefined;
+  G.miss.push(G.cur);rec(G.cur,true);noteConf(G.cur,other);fx(false);
+  if(G.learn){review(other);return}
+  $('last').innerHTML=`${v?'That was':'Skipped:'} <span class="miss"></span>`;$('last').querySelector('.miss')!.textContent=G.cur.n;
+  input.value='';next();
+}
 $<HTMLInputElement>('answer').addEventListener('keydown',e=>{
-  if(!G||!G.cur||!(e.target instanceof HTMLInputElement))return;
-  if(e.key==='Enter'&&(G.rv||G.lock)){e.preventDefault&&e.preventDefault();return}
-  if(e.key==='Enter'&&G.learn){e.preventDefault();const v=norm(e.target.value),other=v?FLAGS.find(f=>f!==G?.cur&&f.a.has(v)):undefined;
-    G.miss.push(G.cur);rec(G.cur,true);noteConf(G.cur,other);fx(false);review(other);return}
-  if(e.key==='Enter'){e.preventDefault();const v=norm(e.target.value);noteConf(G.cur,v?FLAGS.find(f=>f!==G?.cur&&f.a.has(v)):undefined);G.miss.push(G.cur);rec(G.cur,true);fx(false);
-    $('last').innerHTML=`Skipped: <span class="miss"></span>`;$('last').querySelector('.miss')!.textContent=G.cur.n;
-    e.target.value='';next();}
+  if(!G||kbOn())return; // the app keyboard has its own key handler
+  if(e.key==='Enter'){e.preventDefault();submit()}
   if(e.key==='Escape')finish();
 });
+// ── Flag Sprint keyboard: big keys, no autocorrect, and the system keyboard never opens ──
+const KB_ROWS=['qwertyuiop','asdfghjkl','zxcvbnm'];
+const kbOn=()=>cfg.kbd==='app'&&matchMedia('(pointer:coarse)').matches;
+$('kb').innerHTML=KB_ROWS.map((r,i)=>`<div class="kb-row">${[...r].map(c=>`<button type="button" data-k="${c}">${c}</button>`).join('')}${i===2?'<button type="button" class="kb-wide" data-k="Backspace" aria-label="Delete">⌫</button>':''}</div>`).join('')+
+  '<div class="kb-row"><button type="button" class="kb-wide" data-k="Skip">Skip</button><button type="button" class="kb-space" data-k=" " aria-label="Space">space</button><button type="button" class="kb-enter" data-k="Enter">Enter</button></div>';
+function kbKey(k:string){
+  if(!G)return;
+  const input=$<HTMLInputElement>('answer');
+  if(k==='Enter')return submit();
+  if(k==='Skip'){input.value='';return submit()}
+  input.value=k==='Backspace'?input.value.slice(0,-1):input.value+k;
+  input.dispatchEvent(new Event('input')); // Learn's copy step listens for input
+}
+// pointerdown answers at the touch, before the browser's tap delay and without stealing focus
+$('kb').addEventListener('pointerdown',e=>{const b=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button[data-k]'):null;if(!b)return;e.preventDefault();b.classList.add('down');setTimeout(()=>b.classList.remove('down'),120);kbKey(b.dataset.k!)});
+// an iPad with a hardware keyboard still types while the app keyboard is showing
+document.addEventListener('keydown',e=>{
+  if(!G||$('game').hidden||$('kb').hidden||e.metaKey||e.ctrlKey)return;
+  if(e.key==='Escape'){finish();return}
+  if(/^[a-z ]$/i.test(e.key)||e.key==='Backspace'||e.key==='Enter'){e.preventDefault();kbKey(e.key.length===1?e.key.toLowerCase():e.key)}
+});
+function showKb(on:boolean){
+  const use=on&&kbOn(),input=$<HTMLInputElement>('answer');
+  $('kb').hidden=!use;input.readOnly=use;input.inputMode=use?'none':'text';
+}
 function finish(){
   if(!G)return;
   clearInterval(G.timer);G.lock=false;G.rv=false;$('review').hidden=true;$<HTMLInputElement>('answer').placeholder='';

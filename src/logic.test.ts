@@ -1,8 +1,8 @@
 import {describe,expect,it} from 'vitest';
 import type {Cfg,HistEntry,PassFields} from './types';
-import {norm,flightCode,parseFlight,prio,applyAnswer,isKnown,needsWork,KNOWN,MC_CAP,POOLS,DESTS,MODES,DURS,destRegs} from './logic';
+import {candidates,norm,flightCode,parseFlight,prio,applyAnswer,isKnown,needsWork,KNOWN,MC_CAP,POOLS,DESTS,MODES,DURS,destRegs} from './logic';
 
-const cfg:Cfg={pace:'learn',hap:true,mode:'adaptive',dur:120,pool:'un',dest:'world',regs:destRegs('world')};
+const cfg:Cfg={pace:'learn',hap:true,kbd:'app',mode:'adaptive',dur:120,pool:'un',dest:'world',regs:destRegs('world')};
 const combinations:PassFields[]=[];
 for(const [pool] of POOLS)for(const [dest] of DESTS)for(const [mode] of MODES)for(const dur of DURS)combinations.push({pool,dest,mode,dur});
 
@@ -88,4 +88,10 @@ describe('applyAnswer',()=>{
     expect(applyAnswer([3,0,1001,0,2],false,20000,false)).toEqual([4,0,6601,0,3]);
     expect(applyAnswer([1,0,0,0,1],false,999.5,false)[2]).toBe(1000);
   });
+});
+
+describe('candidates',()=>{
+  it('keeps the only flag of a one-flag pool',()=>{expect(candidates(['a'],['a'])).toEqual(['a'])});
+  it('rests the most recent flags',()=>{expect(candidates(['a','b','c'],['a','b'])).toEqual(['c'])});
+  it('never returns an empty list',()=>{expect(candidates(['a','b'],['b','a'],5)).toEqual(['b'])});
 });

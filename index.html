@@ -42,6 +42,11 @@
       <p class="lbl">Vibrate on answers</p>
       <div class="chips" id="hap"></div>
     </div>
+    <div class="group touchonly">
+      <p class="lbl">Keyboard</p>
+      <div class="chips" id="kbd"></div>
+      <p class="note">Flag Sprint's keyboard has bigger keys and never autocorrects.</p>
+    </div>
     <div class="acct" id="acct" hidden>
       <p class="lbl">Account</p>
       <div id="acctIn"><form class="acctrow" id="acctForm"><label for="email">Sync across devices</label><input id="email" type="email" required placeholder="you@example.com" autocomplete="email"><button class="link">Email me a link</button></form></div>
@@ -57,7 +62,8 @@
       <div class="sr" id="sr" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)"></div>
       <div id="review" hidden><div class="where" id="rvWhere"></div><div class="name" id="rvName"></div><div class="cmp" id="rvCmp" hidden></div><div class="do" id="rvDo"></div><button id="rvGo" class="primary" hidden>Continue (Enter)</button></div>
       <div id="choices" hidden></div>
-      <div class="inrow"><input id="answer" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="next" aria-label="Country name"><button id="skip" type="button">Skip</button></div>
+      <div class="inrow"><input id="answer" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Country name, press Enter to answer"><button id="skip" type="button">Skip</button></div>
+      <div class="kb" id="kb" hidden></div>
       <div class="last" id="last"></div>
     </div>
   </section>

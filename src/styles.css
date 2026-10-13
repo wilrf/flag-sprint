@@ -311,3 +311,14 @@ nav button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--ink)}
   .lib{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 14px}
 }
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+
+/* ---- Flag Sprint keyboard (touch screens): big keys, no autocorrect ---- */
+.kb{width:min(100%,560px);display:flex;flex-direction:column;gap:7px;margin-top:4px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.kb-row{display:flex;gap:5px;justify-content:center}
+.kb-row:nth-child(2){padding-inline:5%}
+.kb button{flex:1 1 0;min-width:0;height:50px;padding:0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:500 19px var(--sans);text-transform:uppercase;box-shadow:0 1px 0 var(--line);-webkit-tap-highlight-color:transparent}
+.kb button.down{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.kb .kb-wide{flex:1.5 1 0;font-size:14px;text-transform:none}
+.kb .kb-space{flex:4 1 0;font-size:13px;text-transform:none;color:var(--mute)}
+.kb .kb-enter{flex:2 1 0;background:var(--ink);color:var(--bg);border-color:var(--ink);font-size:16px;font-weight:600;text-transform:none}
+#answer[readonly]{caret-color:transparent;cursor:default}

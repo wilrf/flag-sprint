@@ -31,6 +31,12 @@ export function applyAnswer(entry:HistEntry|undefined,miss:boolean,ms:number,mc:
   else{h[3]=0;const e=h[4]||0;h[4]=Math.round((mc?(e>=MC_CAP?e:Math.min(MC_CAP,e+.4)):e+1)*10)/10;h[2]=h[2]?Math.round(h[2]*.6+Math.min(ms,15000)*.4):Math.round(Math.min(ms,15000))}
   return h;
 }
+// the last few flags sit out so nothing repeats back to back; a one-flag pool keeps its only flag
+export function candidates<T>(pool:readonly T[],recent:readonly T[],cooldown=5):T[]{
+  const cool=Math.min(cooldown,pool.length-1),out=cool>0?recent.slice(-cool):[];
+  const cand=pool.filter(f=>!out.includes(f));
+  return cand.length?cand:pool.slice();
+}
 export const isKnown=(h:HistEntry|undefined)=>!!h&&(h[4]||0)>=KNOWN&&prio(h)<1;
 export const needsWork=(h:HistEntry|undefined)=>!!h&&prio(h)>=1;
 // one digit per field, so every combination of choices flies its own number; the charter is FS 0000
