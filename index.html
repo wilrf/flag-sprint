@@ -498,7 +498,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('result').hidden&
 (window.visualViewport||window).addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 renderSetup();
 // account storage: one Supabase row per player (RLS: own row only); falls back to this browser when signed out
-const SB_URL='',SB_KEY=''; // project URL + publishable key; safe in the page because RLS guards the table
+const SB_URL='https://poemkxmxbmstigpcwyas.supabase.co',SB_KEY='sb_publishable_6VF4jt4SEN3k8wze05e7Dg_4i1XFRk7'; // project URL + publishable key; safe in the page because RLS guards the table
 const sb=SB_URL&&window.supabase?supabase.createClient(SB_URL,SB_KEY):null;
 let uid=null;
 // Decide what to keep when this browser and the account both have progress.
