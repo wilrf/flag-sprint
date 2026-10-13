@@ -192,7 +192,7 @@ body.playing .wrap{padding-block:8px;gap:0}
 @keyframes tear{0%{transform:none}18%{transform:rotate(-4deg) translateX(6px)}100%{transform:rotate(22deg) translate(60px,520px);opacity:0}}
 .boarding{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font:12px var(--mono);letter-spacing:.16em;color:var(--accent)}
 .boarding span{color:var(--mute);font-size:11px}
-.charter-stamp{position:absolute;right:250px;top:22px;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:4px 12px;font:14px var(--mono);letter-spacing:.2em;opacity:.85;pointer-events:none;transform:rotate(-9deg);animation:slam .35s cubic-bezier(.2,1.6,.4,1) both}
+.charter-stamp{position:absolute;right:290px;bottom:30px;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:4px 12px;font:14px var(--mono);letter-spacing:.2em;opacity:.85;pointer-events:none;transform:rotate(-9deg);animation:slam .35s cubic-bezier(.2,1.6,.4,1) both}
 @keyframes slam{0%{transform:rotate(-9deg) scale(2.2);opacity:0}100%{transform:rotate(-9deg) scale(1);opacity:.85}}
 /* library */
 .psearch{display:flex;flex-direction:column;gap:6px}
@@ -256,7 +256,8 @@ body.playing .wrap{padding-block:8px;gap:0}
   .stub-wrap{width:auto;height:84px;position:sticky;bottom:env(safe-area-inset-bottom,0px);z-index:3}
   .stub{border-radius:0 0 18px 18px;flex-direction:row;gap:16px}
   .stub .go{font-size:24px}
-  .charter-stamp{right:14px;top:14px}
+  .charter-stamp{right:14px;top:14px;bottom:auto}
+  .pass-top{flex-direction:column;align-items:flex-start;gap:8px} /* flight on its own line keeps the stamp's corner free */ /* the desktop rule pins the bottom; unpin it or the stamp stretches */
   .stats{width:auto;border-radius:0 0 18px 18px;flex-direction:row;justify-content:space-around;padding:18px}
   .stats dd{font-size:24px}
   .tgrid,.ppage{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
@@ -265,7 +266,8 @@ body.playing .wrap{padding-block:8px;gap:0}
   .lreg h2{font-size:28px}
   .fval{font-size:19px}
 }
-@media (max-width:520px){header{gap:8px;flex-wrap:nowrap}nav{gap:14px}nav button,nav button[aria-current="page"]{font-size:13px}.logo{font-size:13px}.mode{width:36px;height:36px}}
+/* body-prefixed: these must beat the refresh rules, which come later in this file */
+@media (max-width:520px){body .wrap{padding-inline:16px}body header{gap:8px;flex-wrap:nowrap}body nav{gap:12px}body nav button,body nav button[aria-current="page"]{font-size:13px}body .logo{font-size:12px}body .mode{width:36px;height:36px;flex:none}}
 
 /* ---- refresh: quiet single column, text options, atlas library ---- */
 body{transition:background-color .3s ease,color .3s ease}
