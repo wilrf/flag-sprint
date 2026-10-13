@@ -163,7 +163,7 @@ body.playing .wrap{padding-block:8px;gap:0}
     <div class="group" id="acct" hidden>
       <p class="lbl">Account</p>
       <form class="row" id="acctIn"><input id="email" type="email" required placeholder="you@example.com" aria-label="Email" autocomplete="email"><button class="primary">Email me a sign-in link</button></form>
-      <div class="row" id="acctOut" hidden><span class="hint" id="acctWho"></span><button type="button" id="signout">Sign out</button></div>
+      <div class="row" id="acctOut" hidden><span class="hint" id="acctWho"></span><button type="button" id="signout">Sign out</button><button type="button" id="delacct">Delete my account</button></div>
     </div>
     <div class="group">
       <p class="lbl">Mode</p>
@@ -527,7 +527,21 @@ if(sb){
     const {error}=await sb.auth.signInWithOtp({email:$('email').value,options:{emailRedirectTo:location.origin+location.pathname}});
     sync(false,error?'Could not send the link: '+error.message:'Check your email for the sign-in link');
   };
-  $('signout').onclick=()=>sb.auth.signOut();
+  // signing out also wipes this browser's copy, so the next person on a shared device sees nothing
+  const forget=async()=>{
+    cloud=null;clearTimeout(saveTimer);
+    await sb.auth.signOut({scope:'local'});
+    ['state','hist','cfg'].forEach(k=>{try{localStorage.removeItem('fs.'+k)}catch{}});
+    S={hist:{},marks:[],best:{},cfg:{},t:0};cfg=Object.assign({},DEF);hist=S.hist;marks=new Set();
+    if(!G){renderSetup();renderLib()}
+  };
+  $('signout').onclick=forget;
+  $('delacct').onclick=async()=>{
+    if(!confirm('Delete your account, email address and all saved progress? This cannot be undone.'))return;
+    const {error}=await sb.rpc('delete_my_account');
+    if(error){sync(true,'Could not delete: '+error.message);return}
+    await forget();setTimeout(()=>sync(false,'Account deleted')); // after the auth listener's own status update
+  };
   // supabase-js holds a lock during this callback; defer queries out of it to avoid a deadlock
   sb.auth.onAuthStateChange((_e,session)=>setTimeout(()=>connect(session?session.user:null)));
 }else sync(false);
