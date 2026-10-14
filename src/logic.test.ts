@@ -1,6 +1,7 @@
 import {describe,expect,it} from 'vitest';
+import RAW from './flags.json';
 import type {Cfg,HistEntry,PassFields,SaveState} from './types';
-import {mergeSaves,candidates,norm,flightCode,parseFlight,prio,applyAnswer,isKnown,needsWork,KNOWN,MC_CAP,POOLS,DESTS,MODES,DURS,destRegs} from './logic';
+import {SHARED_FLAGS,flagGroup,sameFlag,oneCardPerFlag,mergeSaves,candidates,norm,flightCode,parseFlight,prio,applyAnswer,isKnown,needsWork,KNOWN,MC_CAP,POOLS,DESTS,MODES,DURS,destRegs} from './logic';
 
 const cfg:Cfg={pace:'learn',hap:true,kbd:'app',mode:'adaptive',dur:120,pool:'un',dest:'world',regs:destRegs('world')};
 const combinations:PassFields[]=[];
@@ -105,4 +106,20 @@ describe('mergeSaves',()=>{
   it('takes mix-up counts as a max and the earliest known date',()=>{expect(m.conf).toEqual({Chad:{Romania:2,Mali:1}});expect(m.kat).toEqual({France:1000,Peru:3000})});
   it('takes settings and time from the newer save',()=>{expect(m.cfg.pace).toBe('sprint');expect(m.t).toBe(200)});
   it('is idempotent and order-independent',()=>{expect(mergeSaves(m,m)).toEqual(m);expect(mergeSaves(m,phone)).toEqual(m);expect(mergeSaves(laptop,phone)).toEqual(m)});
+});
+
+describe('shared flags',()=>{
+  const names=new Set((RAW as {n:string}[]).map(f=>f.n));
+  it('names only places that exist in the flag data',()=>{expect(SHARED_FLAGS.flat().filter(n=>!names.has(n))).toEqual([])});
+  it('treats every member of a group as the same flag, both ways',()=>{
+    expect(sameFlag('Svalbard and Jan Mayen','Norway')).toBe(true);
+    expect(sameFlag('Norway','Svalbard and Jan Mayen')).toBe(true);
+    expect(sameFlag('Guadeloupe','Mayotte')).toBe(true);
+    expect(sameFlag('Norway','Sweden')).toBe(false);
+    expect(flagGroup('Japan')).toEqual(['Japan']);
+  });
+  it('keeps one card per shared flag and leaves the rest alone',()=>{
+    const pool=['Guadeloupe','Japan','Saint Martin','Norway','Svalbard and Jan Mayen','Mayotte'].map(n=>({n}));
+    expect(oneCardPerFlag(pool).map(f=>f.n)).toEqual(['Guadeloupe','Japan','Norway']);
+  });
 });

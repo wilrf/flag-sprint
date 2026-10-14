@@ -70,3 +70,21 @@ export function mergeSaves(a:SaveState,b:SaveState):SaveState{
   for(const k of keys(older.kat,newer.kat)){const o=older.kat?.[k],n=newer.kat?.[k];kat[k]=o&&n?Math.min(o,n):(o||n)!} // first time it was known, on either device
   return {hist,marks:[...new Set([...(older.marks||[]),...(newer.marks||[])])].sort(),best,cfg:{...older.cfg,...newer.cfg},conf,kat,t:Math.max(older.t||0,newer.t||0)};
 }
+
+// Places whose official flag IS another country's flag (pixel-identical when all 250 were rendered and compared).
+// A flag can't tell them apart, so any name in a group is a right answer and a run shows each flag once.
+export const SHARED_FLAGS:readonly (readonly string[])[]=[
+  ['Norway','Svalbard and Jan Mayen'],
+  ['France','French Guiana','Guadeloupe','Mayotte','Réunion','Saint Barthélemy','Saint Martin','Saint Pierre and Miquelon','Wallis and Futuna'],
+  ['United Kingdom','Saint Helena, Ascension and Tristan da Cunha'],
+  ['United States','United States Minor Outlying Islands'],
+  ['Australia','Heard Island and McDonald Islands'],
+  ['Netherlands','Caribbean Netherlands'],
+];
+export const flagGroup=(name:string):readonly string[]=>SHARED_FLAGS.find(g=>g.includes(name))??[name];
+export const sameFlag=(a:string,b:string)=>a===b||flagGroup(a).includes(b);
+// one card per shared flag, keeping the first in the pool's order (the weakest, in a Weak pool)
+export function oneCardPerFlag<T extends {n:string}>(pool:readonly T[]):T[]{
+  const seen=new Set<string>();
+  return pool.filter(f=>{const k=flagGroup(f.n)[0];if(seen.has(k))return false;seen.add(k);return true});
+}

@@ -1,13 +1,17 @@
 import './styles.css';
 import type {SupabaseClient,User} from '@supabase/supabase-js';
 import type {Cfg,Flag,Option,PassCol,PassFields,RawFlag,SaveState} from './types';
-import {mergeSaves,candidates,norm,KNOWN,MC_DONE,REGS,POOLS,MODES,TIMES,destinationOptions,destRegs,prio,applyAnswer,flightCode,parseFlight,isKnown,needsWork} from './logic';
+import {flagGroup,sameFlag,oneCardPerFlag,mergeSaves,candidates,norm,KNOWN,MC_DONE,REGS,POOLS,MODES,TIMES,destinationOptions,destRegs,prio,applyAnswer,flightCode,parseFlight,isKnown,needsWork} from './logic';
 const {default:RAW}=await import('./flags.json');
 const EXTRA:Record<string,string[]>={'United States':['us','america'],'United Kingdom':['uk','britain','greatbritain'],'Netherlands':['holland'],'Myanmar':['burma'],'Eswatini':['swaziland'],'North Macedonia':['macedonia'],'Czechia':['czechrepublic'],'Turkey':['turkiye'],'Timor-Leste':['easttimor'],'Cape Verde':['caboverde'],'Vatican City':['vatican','holysee'],'Republic of the Congo':['congobrazzaville'],'South Korea':['korea'],'Russia':['russianfederation']};
 const FLAGS:Flag[]=(RAW as RawFlag[]).map(f=>{
   const reg=f.r==='Americas'?(f.s==='South America'?'South America':'North America'):f.r,meta=[f.s,reg,f.k==='un'?'UN member':'Non-UN'].filter((v,i,a)=>v&&a.indexOf(v)===i);
   return {...f,a:new Set([...f.a,...(EXTRA[f.n]||[])]),reg,meta,tags:[f.r,...meta].map(norm)};
 });
+const BY_NAME=new Map(FLAGS.map(f=>[f.n,f]));
+// a typed answer is right if it names any place that flies this exact flag
+const accepts=(f:Flag,v:string)=>flagGroup(f.n).some(n=>BY_NAME.get(n)?.a.has(v));
+const alsoFlown=(f:Flag)=>flagGroup(f.n).filter(n=>n!==f.n);
 
 const store={get<T>(k:string,d:T):T{try{const v=localStorage.getItem('fs.'+k);return v?JSON.parse(v) as T:d}catch{return d}},set(k:string,v:unknown){try{localStorage.setItem('fs.'+k,JSON.stringify(v))}catch{}}};
 const DEF:Cfg={pace:'learn',hap:true,kbd:'app',mode:'adaptive',dur:120,pool:'un',dest:'world',regs:REGS.slice()};
@@ -50,7 +54,7 @@ function buildPool(){
   if(cfg.pool==='un'&&cfg.dest!=='Antarctica')p=p.filter(f=>f.k==='un'); // the charter's territories are all non-UN
   if(cfg.pool==='marked')p=p.filter(f=>marks.has(f.n));
   if(cfg.pool==='weak')p=p.filter(f=>hist[f.n]&&prio(hist[f.n])>=1).sort((a,b)=>prio(hist[b.n])-prio(hist[a.n])).slice(0,40);
-  return p;
+  return oneCardPerFlag(p);
 }
 // ── boarding pass: four fields, every option visible; arrows move, Enter chooses (shared with the library pass) ──
 const passCols=():PassCol<PassFields>[]=>[
@@ -154,7 +158,7 @@ function applyMode(){
 // distractors: same subregion first, then same region, then anywhere; drawn from the chosen flag set so they look plausible
 function renderChoices(){
   if(!G||!G.cur)return;
-  const c=G.cur,base=FLAGS.filter(f=>f!==c&&(cfg.pool!=='un'||f.k==='un')),opts=[c];
+  const c=G.cur,base=FLAGS.filter(f=>!sameFlag(f.n,c.n)&&(cfg.pool!=='un'||f.k==='un')),opts=[c]; // never two right buttons
   for(const tier of [(f:Flag)=>f.s===c.s,(f:Flag)=>f.r===c.r,()=>true]){
     for(const f of shuffle(base.filter(tier)))if(opts.length<4&&!opts.includes(f))opts.push(f);
   }
@@ -165,7 +169,7 @@ function renderChoices(){
 function pick(i:number){
   if(!G||!G.cur||G.lock||G.rv||!G.opts[i])return;
   const f=G.opts[i],btns=$('choices').children;
-  if(f===G.cur){
+  if(sameFlag(f.n,G.cur.n)){
     G.score++;const ms=performance.now()-G.t0;G.times.push([G.cur,ms]);rec(G.cur,false,ms);
     $('score').textContent=String(G.score);
     fx(true);advance();
@@ -196,7 +200,8 @@ function review(picked?:Flag){
   if(!G||!G.cur)return;
   G.rv=true;G.pausedAt=performance.now();
   const f=G.cur;
-  $('rvWhere').textContent=f.s||f.r;$('rvName').textContent=f.n;
+  const also=alsoFlown(f);
+  $('rvWhere').textContent=(f.s||f.r)+(also.length?' · same flag as '+also.join(', '):'');$('rvName').textContent=f.n;
   if(picked&&picked!==f){$('rvCmp').hidden=false;$('rvCmp').innerHTML='<span>You picked <b></b></span><img alt="">';$('rvCmp').querySelector('b')!.textContent=picked.n;$('rvCmp').querySelector('img')!.src=picked.f}
   else $('rvCmp').hidden=true;
   $('review').hidden=false;$('choices').hidden=true;
@@ -240,21 +245,22 @@ function tick(){
 // typing never answers on its own: Enter submits, so a wrong guess can't be quietly corrected
 $<HTMLInputElement>('answer').addEventListener('input',e=>{
   if(!G||!G.cur||!G.rv||!(e.target instanceof HTMLInputElement))return;
-  if(G.cur.a.has(norm(e.target.value)))endReview(); // Learn's "type the name to continue" is copying, not answering
+  if(accepts(G.cur,norm(e.target.value)))endReview(); // Learn's "type the name to continue" is copying, not answering
 });
 // Enter with the right name scores; a wrong name is a miss (and noted as a mix-up); empty is a skip
 function submit(){
   if(!G||!G.cur||G.rv||G.lock||G.mc)return;
   const input=$<HTMLInputElement>('answer'),v=norm(input.value);
-  if(v&&G.cur.a.has(v)){
+  if(v&&accepts(G.cur,v)){
     G.score++;const ms=performance.now()-G.t0;G.times.push([G.cur,ms]);rec(G.cur,false,ms);
     input.value='';$('score').textContent=String(G.score);
     fx(true);advance();return;
   }
-  const other=v?FLAGS.find(f=>f!==G?.cur&&f.a.has(v)):undefined;
+  const cur=G.cur,other=v?FLAGS.find(f=>!sameFlag(f.n,cur.n)&&f.a.has(v)):undefined;
   G.miss.push(G.cur);rec(G.cur,true);noteConf(G.cur,other);fx(false);
   if(G.learn){review(other);return}
-  $('last').innerHTML=`${v?'That was':'Skipped:'} <span class="miss"></span>`;$('last').querySelector('.miss')!.textContent=G.cur.n;
+  const also=alsoFlown(G.cur);
+  $('last').innerHTML=`${v?'That was':'Skipped:'} <span class="miss"></span>`;$('last').querySelector('.miss')!.textContent=G.cur.n+(also.length?` (same flag as ${also.join(', ')})`:'');
   input.value='';next();
 }
 $<HTMLInputElement>('answer').addEventListener('keydown',e=>{
@@ -343,7 +349,7 @@ function ticket(f:Flag){
   const top=Object.entries(conf[f.n]||{}).sort((a,b)=>b[1]-a[1])[0];
   return `<div class="tkt"><button type="button" class="turn" aria-pressed="false" aria-label="Turn over ${esc(f.n)}"><span class="flipper">`+
     `<span class="face front"><span class="plate"><img src="${f.f}" alt="" loading="lazy" decoding="async"></span><span class="tear"></span><span class="tinfo"><b>${esc(f.n)}</b><small class="tstat s-${st[0]}">${st[1]}</small></span></span>`+
-    `<span class="face back"><span class="tag">LUGGAGE TAG<i></i></span><b>${esc(f.n)}</b><span class="rows"><span>Seen</span><span>${h?h[0]:0}</span><span>Missed</span><span>${h?h[1]:0}</span><span>Avg time</span><span>${h&&h[2]?(h[2]/1000).toFixed(1)+' s':'—'}</span><span>Mixed up with</span><span>${top?esc(top[0]):'—'}</span></span><span class="hint2">${esc(f.s||f.reg)} · TAP TO TURN BACK</span></span>`+
+    `<span class="face back"><span class="tag">LUGGAGE TAG<i></i></span><b>${esc(f.n)}</b><span class="rows"><span>Seen</span><span>${h?h[0]:0}</span><span>Missed</span><span>${h?h[1]:0}</span><span>Avg time</span><span>${h&&h[2]?(h[2]/1000).toFixed(1)+' s':'—'}</span><span>Mixed up with</span><span>${top?esc(top[0]):'—'}</span>${alsoFlown(f).length?`<span>Same flag as</span><span>${esc(alsoFlown(f).join(', '))}</span>`:''}</span><span class="hint2">${esc(f.s||f.reg)} · TAP TO TURN BACK</span></span>`+
     `</span></button><button class="star" data-n="${esc(f.n)}" aria-pressed="${marks.has(f.n)}" aria-label="${marks.has(f.n)?'Unmark':'Mark'} ${esc(f.n)}">${marks.has(f.n)?'★':'☆'}</button></div>`;
 }
 function visa(f:Flag){
